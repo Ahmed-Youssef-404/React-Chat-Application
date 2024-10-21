@@ -13,8 +13,8 @@ After downloading, extract the ZIP file.
 Open the extracted folder in your terminal or command prompt (CMD).
 
 3. Install the Required Packages:
-Run the following command to install all the necessary dependencies: npm install
+Run the following command to install all the necessary dependencies: "npm install"
 
 4. Run the Application:
-Once the packages are installed, run the following command to start the application in development mode: npm run dev
+Once the packages are installed, run the following command to start the application in development mode: "npm run dev"
 By default, the app will run on http://localhost:3000.
