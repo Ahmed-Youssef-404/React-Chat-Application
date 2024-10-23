@@ -8,7 +8,6 @@ import { useUserStore } from "../../lib/userStore";
 import upload from "../../lib/upload";
 
 const Chat = () => {
-
     const [chat, setChat] = useState();
     const [open, setOpen] = useState(false);
     const [text, setText] = useState("");
@@ -18,43 +17,52 @@ const Chat = () => {
     });
 
     const { currentUser: currentUser } = useUserStore();
-    const { chatId, user, isCurrentUserBlocked, isReceiverBlocked,} = useChatStore();
+    const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, } = useChatStore();
 
+
+    // **********************************************************************************************
+
+    // Scroll to end reference
     const endRef = useRef(null);
 
-    useEffect(() => {
-        endRef.current.scrollIntoView({
-            behavior: "smooth",
-        })
-    }, []);
+    // Scroll function
+    const scrollToBottom = () => {
+        endRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
+    // Scroll to the bottom when the chat or messages change
     useEffect(() => {
-        const unSub = onSnapshot(doc(db, "chats", chatId),
-            (res) => {
-                setChat(res.data());
-            });
+        const unSub = onSnapshot(doc(db, "chats", chatId), (res) => {
+            setChat(res.data());
+            // Scroll to the last message whenever chat updates (messages are loaded)
+            scrollToBottom();
+        });
 
         return () => {
             unSub();
-        }
+        };
     }, [chatId]);
 
-    // console.log(chat); //why it is "undefined"
+    // Scroll to the bottom when the component mounts or re-renders
+    useEffect(() => {
+        scrollToBottom();
+    }, [chat]);  // Trigger scrolling when chat changes
 
-
+    // **********************************************************************************************
+    
 
     const handleEmoji = e => {
-        setText((perv) => perv + e.emoji);
-    }
+        setText((prev) => prev + e.emoji);
+    };
 
     const handleImg = e => {
         if (e.target.files[0]) {
             setImg({
                 file: e.target.files[0],
                 url: URL.createObjectURL(e.target.files[0])
-            })
+            });
         }
-    }
+    };
 
     const handleSend = async () => {
         if (text === "") return;
@@ -62,9 +70,8 @@ const Chat = () => {
         let imgUrl = null;
 
         try {
-
             if (img.file) {
-                imgUrl = await upload(img.file)
+                imgUrl = await upload(img.file);
             }
 
             await updateDoc(doc(db, "chats", chatId), {
@@ -96,6 +103,13 @@ const Chat = () => {
                 }
             });
 
+            // ***************
+
+            // Scroll to the bottom after sending the message
+            scrollToBottom();
+
+            // ***************
+
         } catch (err) {
             console.error(err);
         }
@@ -106,10 +120,7 @@ const Chat = () => {
         });
 
         setText("");
-
-    }
-
-
+    };
 
     return (
         <div className="chat">
@@ -118,7 +129,6 @@ const Chat = () => {
                     <img src={user?.avatar || "./avatar.png"} alt="" />
                     <div className="texts">
                         <span>{user?.username}</span>
-                        {/* <p>Lorem ipsum dolor sit amet.</p> */}
                     </div>
                 </div>
                 <div className="icons">
@@ -129,19 +139,15 @@ const Chat = () => {
             </div>
 
             <div className="center">
-
                 {
                     chat?.messages?.map((message) => (
-                        <div className={message.senderId === currentUser?.id ?"message own":"message"} key={message?.createAt}>
-                            {/* <img src="./avatar.png" alt="" /> */}
+                        <div className={message.senderId === currentUser?.id ? "message own" : "message"} key={message?.createdAt}>
                             <div className="texts">
-                                {message.img &&
-                                    <img src={message.img} alt="" />
-                                }
+                                {message.img && <img src={message.img} alt="" />}
                                 <p>
                                     {message.text}
+                                    <br />
                                 </p>
-                                {/* <span>{message}</span> */}
                             </div>
                         </div>
                     ))
@@ -155,32 +161,36 @@ const Chat = () => {
                     </div>
                 )}
 
-                <div ref={endRef}></div>
+                {/******************/}
+
+                <div ref={endRef}></div> {/* End ref for scrolling */}
+
+                {/******************/}
 
             </div>
 
             <div className="bottom">
                 <div className="icons">
                     <label htmlFor="file">
-                        <img src="./img.png" alt="" className={isCurrentUserBlocked||isReceiverBlocked? "disabled":""}/>
+                        <img src="./img.png" alt="" className={isCurrentUserBlocked || isReceiverBlocked ? "disabled" : ""} />
                     </label>
-                    <input className="disabled" type="file" id="file" style={{ display: "none" }} onChange={handleImg} disabled={isCurrentUserBlocked||isReceiverBlocked}/>
-                    <img className={isCurrentUserBlocked||isReceiverBlocked? "disabled":""} src="./camera.png" alt=""/>
-                    <img className={isCurrentUserBlocked||isReceiverBlocked? "disabled":""} src="./mic.png" alt=""/>
+                    <input type="file" id="file" style={{ display: "none" }} onChange={handleImg} disabled={isCurrentUserBlocked || isReceiverBlocked} />
+                    <img className={isCurrentUserBlocked || isReceiverBlocked ? "disabled" : ""} src="./camera.png" alt="" />
+                    <img className={isCurrentUserBlocked || isReceiverBlocked ? "disabled" : ""} src="./mic.png" alt="" />
                 </div>
-                <input type="text" placeholder={(isCurrentUserBlocked||isReceiverBlocked)? "You cannot send a message":"Type a message"} value={text} onChange={e => setText(e.target.value)}  disabled={isCurrentUserBlocked||isReceiverBlocked}/>
+                <input type="text" placeholder={isCurrentUserBlocked || isReceiverBlocked ? "You cannot send a message" : "Type a message"} value={text} onChange={e => setText(e.target.value)} disabled={isCurrentUserBlocked || isReceiverBlocked} />
                 <div className="emoji">
-                    <img src="./emoji.png" alt="" onClick={ isCurrentUserBlocked||isReceiverBlocked? "": () => setOpen(!open)} className={isCurrentUserBlocked||isReceiverBlocked? "emojiDisabled":""}/>
+                    <img src="./emoji.png" alt="" onClick={isCurrentUserBlocked || isReceiverBlocked ? "" : () => setOpen(!open)} className={isCurrentUserBlocked || isReceiverBlocked ? "emojiDisabled" : ""} />
                     <div className="picker">
-                        <EmojiPicker open={open} onEmojiClick={handleEmoji}/>
+                        <EmojiPicker open={open} onEmojiClick={handleEmoji} />
                     </div>
                 </div>
-                <button className="sendButton" onClick={handleSend} disabled={isCurrentUserBlocked||isReceiverBlocked}>
+                <button className="sendButton" onClick={handleSend} disabled={isCurrentUserBlocked || isReceiverBlocked}>
                     Send
                 </button>
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default Chat;
